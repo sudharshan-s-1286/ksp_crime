@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KSP Crime Copilot — Enterprise Intelligence Dashboard</title>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-obsidian: #09090b;
+            --bg-card: rgba(18, 18, 24, 0.7);
+            --border-glass: rgba(255, 255, 255, 0.05);
+            --text-primary: #f4f4f5;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            
+            /* Curated Harmonies */
+            --color-indigo: #6366f1;
+            --color-indigo-glow: rgba(99, 102, 241, 0.15);
+            --color-violet: #8b5cf6;
+            --color-violet-glow: rgba(139, 92, 246, 0.15);
+            --color-emerald: #10b981;
+            --color-emerald-glow: rgba(16, 185, 129, 0.15);
+            --color-amber: #f59e0b;
+            --color-amber-glow: rgba(245, 158, 11, 0.15);
+            --color-rose: #f43f5e;
+            --color-rose-glow: rgba(244, 63, 94, 0.2);
+            
+            --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-obsidian);
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        h1, h2, h3, h4 {
+            font-family: 'Outfit', sans-serif;
+            font-weight: 600;
+            letter-spacing: -0.02em;
+        }
+
+        /* Ambient Glow Background */
+        .ambient-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.08) 0%, rgba(139, 92, 246, 0.03) 50%, transparent 100%);
+            top: -200px;
+            right: -100px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Top Header */
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            background: rgba(9, 9, 11, 0.8);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border-glass);
+            z-index: 10;
+        }
+
+        .header-logo {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .ksp-badge {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, var(--color-indigo), var(--color-violet));
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            color: white;
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .header-title h1 {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #ffffff, #a1a1aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header-title span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+        }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            color: var(--color-emerald);
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--color-emerald);
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Main Workspace Layout */
+        .workspace {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+            z-index: 5;
+        }
+
+        /* Sidebar: Role Selector */
+        .sidebar {
+            width: 300px;
+            background: rgba(12, 12, 16, 0.5);
+            backdrop-filter: blur(8px);
+            border-right: 1px solid var(--border-glass);
+            padding: 2rem 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            overflow-y: auto;
+        }
+
+        .sidebar-section-title {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.5rem;
+        }
+
+        .role-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: var(--transition-smooth);
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .role-card::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: transparent;
+            transition: var(--transition-smooth);
+        }
+
+        .role-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
+        .role-card.active {
+            border-color: var(--color-indigo);
+            background: rgba(99, 102, 241, 0.04);
+            box-shadow: inset 0 0 15px rgba(99, 102, 241, 0.05);
+        }
+
+        .role-card.active::before {
+            background: var(--color-indigo);
+        }
+
+        .role-card.active.supervisor {
+            border-color: var(--color-amber);
+            background: rgba(245, 158, 11, 0.03);
+        }
+        .role-card.active.supervisor::before {
+            background: var(--color-amber);
+        }
+
+        .role-card.active.policymaker {
+            border-color: var(--color-violet);
+            background: rgba(139, 92, 246, 0.03);
+        }
+        .role-card.active.policymaker::before {
+            background: var(--color-violet);
+        }
+
+        .role-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .role-name {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .clearance-tag {
+            font-size: 0.7rem;
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .role-card.investigator .clearance-tag {
+            background: var(--color-emerald-glow);
+            color: var(--color-emerald);
+        }
+
+        .role-card.supervisor .clearance-tag {
+            background: var(--color-amber-glow);
+            color: var(--color-amber);
+        }
+
+        .role-card.policymaker .clearance-tag {
+            background: var(--color-violet-glow);
+            color: var(--color-violet);
+        }
+
+        .role-desc {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Central Content Panes */
+        .content-area {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Chat Panel */
+        .chat-pane {
+            flex: 1.2;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-glass);
+            background: rgba(9, 9, 11, 0.2);
+            overflow: hidden;
+        }
+
+        .chat-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-glass);
+            background: rgba(9, 9, 11, 0.4);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-title h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .chat-title span {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 1.5rem;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        /* Message Bubbles */
+        .message {
+            max-width: 85%;
+            display: flex;
+            flex-direction: column;
+            gap: 0.35rem;
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .message.assistant {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .bubble {
+            padding: 1rem 1.25rem;
+            border-radius: 12px;
+            font-size: 0.92rem;
+            line-height: 1.5;
+        }
+
+        .message.user .bubble {
+            background: var(--color-indigo);
+            color: white;
+            border-bottom-right-radius: 2px;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+        }
+
+        .message.assistant .bubble {
+            background: rgba(24, 24, 35, 0.95);
+            border: 1px solid var(--border-glass);
+            color: var(--text-primary);
+            border-bottom-left-radius: 2px;
+        }
+
+        .message-meta {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        /* Pipeline Telemetry Bar */
+        .pipeline-telemetry {
+            padding: 0.75rem 1.5rem;
+            border-top: 1px solid var(--border-glass);
+            background: rgba(12, 12, 16, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        .pipeline-steps {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .pipe-step {
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+            opacity: 0.4;
+            transition: var(--transition-smooth);
+        }
+
+        .pipe-step.active {
+            opacity: 1;
+            color: var(--color-indigo);
+            font-weight: 500;
+        }
+
+        .pipe-step.completed {
+            opacity: 0.8;
+            color: var(--color-emerald);
+        }
+
+        .pipe-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: var(--text-muted);
+        }
+
+        .pipe-step.active .pipe-indicator {
+            background-color: var(--color-indigo);
+            box-shadow: 0 0 8px var(--color-indigo);
+            animation: pulse 1s infinite;
+        }
+
+        .pipe-step.completed .pipe-indicator {
+            background-color: var(--color-emerald);
+        }
+
+        .pipe-arrow {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        /* Input Form */
+        .chat-input-area {
+            padding: 1.25rem 1.5rem;
+            background: rgba(9, 9, 11, 0.5);
+            border-top: 1px solid var(--border-glass);
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .suggestions-row {
+            display: flex;
+            gap: 0.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.25rem;
+        }
+
+        .suggestion-chip {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-glass);
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: var(--transition-smooth);
+        }
+
+        .suggestion-chip:hover {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: rgba(255, 255, 255, 0.15);
+            color: var(--text-primary);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 0.75rem;
+            position: relative;
+        }
+
+        .chat-input {
+            flex: 1;
+            background: rgba(24, 24, 35, 0.6);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            padding: 0.9rem 1.25rem;
+            color: var(--text-primary);
+            font-family: 'Inter', sans-serif;
+            font-size: 0.92rem;
+            outline: none;
+            transition: var(--transition-smooth);
+        }
+
+        .chat-input:focus {
+            border-color: var(--color-indigo);
+            background: rgba(24, 24, 35, 0.9);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.08);
+        }
+
+        .send-btn {
+            background: var(--color-indigo);
+            color: white;
+            border: none;
+            padding: 0 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            transition: var(--transition-smooth);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+        }
+
+        .send-btn:hover {
+            background: #4f46e5; /* darker indigo */
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(99, 102, 241, 0.35);
+        }
+
+        .send-btn:active {
+            transform: translateY(0);
+        }
+
+        /* Dashboard Visual Panel */
+        .visual-pane {
+            flex: 0.9;
+            background: rgba(12, 12, 16, 0.4);
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+            overflow-y: auto;
+        }
+
+        .visual-pane-title {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+            margin-bottom: 0.25rem;
+        }
+
+        /* Role secured panels display logic */
+        .role-view {
+            display: none;
+            flex-direction: column;
+            gap: 1.25rem;
+            animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .role-view.active {
+            display: flex;
+        }
+
+        /* Card Widgets */
+        .widget-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .widget-title {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .widget-title span.badge {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.4rem;
+            border-radius: 4px;
+            font-weight: 700;
+        }
+
+        /* Specific widgets styling */
+        
+        /* 1. Hotspots Grid */
+        .hotspots-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .hotspot-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.6rem 0.75rem;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border-glass);
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .hotspot-info {
+            display: flex;
+            flex-direction: column;
+            gap: 0.15rem;
+        }
+
+        .hotspot-district {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .hotspot-coords {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .hotspot-count {
+            align-self: center;
+            background: var(--color-rose-glow);
+            color: var(--color-rose);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        /* 2. Temporal Chart */
+        .chart-container {
+            height: 120px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            padding: 0 1rem;
+            margin-top: 0.5rem;
+        }
+
+        .chart-bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.5rem;
+            flex: 1;
+        }
+
+        .chart-bar-outer {
+            width: 32px;
+            height: 80px;
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: flex-end;
+        }
+
+        .chart-bar-inner {
+            width: 100%;
+            background: linear-gradient(to top, var(--color-indigo), var(--color-violet));
+            border-radius: 4px;
+            height: 0%; /* Dynamic */
+            transition: height 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.3);
+        }
+
+        .chart-label {
+            font-size: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        /* 3. Priority Gauge */
+        .gauge-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem 0;
+            position: relative;
+        }
+
+        .gauge-svg {
+            width: 130px;
+            height: 130px;
+            transform: rotate(-90deg);
+        }
+
+        .gauge-bg {
+            fill: none;
+            stroke: rgba(255, 255, 255, 0.03);
+            stroke-width: 10;
+        }
+
+        .gauge-fill {
+            fill: none;
+            stroke: url(#gauge-gradient);
+            stroke-width: 10;
+            stroke-dasharray: 345;
+            stroke-dashoffset: 345; /* Dynamic: 345 to 0 */
+            stroke-linecap: round;
+            transition: stroke-dashoffset 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .gauge-text {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .gauge-value {
+            font-size: 2.2rem;
+            font-weight: 800;
+            font-family: 'Outfit', sans-serif;
+            background: linear-gradient(to right, #ffffff, #a1a1aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .gauge-label {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* 4. Alerts Widget */
+        .alert-item {
+            background: rgba(244, 63, 94, 0.03);
+            border: 1px solid rgba(244, 63, 94, 0.15);
+            border-left: 3px solid var(--color-rose);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            animation: pulse-border 2s infinite;
+        }
+
+        .alert-header {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--color-rose);
+            display: flex;
+            align-items: center;
+            gap: 0.35rem;
+        }
+
+        .alert-body {
+            font-size: 0.78rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
+        }
+
+        /* Markdown elements formatting within assistant bubble */
+        .assistant-report {
+            font-size: 0.92rem;
+            line-height: 1.6;
+        }
+
+        .assistant-report h1, .assistant-report h2, .assistant-report h3 {
+            font-family: 'Outfit', sans-serif;
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .assistant-report h1 { font-size: 1.25rem; border-bottom: 1px solid var(--border-glass); padding-bottom: 0.35rem; }
+        .assistant-report h2 { font-size: 1.05rem; }
+        .assistant-report h3 { font-size: 0.95rem; }
+        
+        .assistant-report ul, .assistant-report ol {
+            padding-left: 1.25rem;
+            margin: 0.5rem 0;
+        }
+
+        .assistant-report li {
+            margin-bottom: 0.35rem;
+            color: var(--text-secondary);
+        }
+
+        .assistant-report p {
+            margin-bottom: 0.75rem;
+            color: var(--text-secondary);
+        }
+
+        .assistant-report blockquote {
+            background: rgba(255, 255, 255, 0.02);
+            border-left: 3px solid var(--color-indigo);
+            padding: 0.75rem 1rem;
+            margin: 0.75rem 0;
+            border-radius: 0 6px 6px 0;
+            font-style: italic;
+        }
+
+        .assistant-report code {
+            background: rgba(255, 255, 255, 0.06);
+            padding: 0.15rem 0.35rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--color-violet);
+        }
+
+        /* Source attribution badge grid in report */
+        .citation-box {
+            margin-top: 1rem;
+            padding: 0.75rem 1rem;
+            background: rgba(24, 24, 35, 0.4);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            font-size: 0.8rem;
+        }
+
+        /* Keyframes */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes pulse-border {
+            0% { border-color: rgba(244, 63, 94, 0.15); }
+            50% { border-color: rgba(244, 63, 94, 0.4); }
+            100% { border-color: rgba(244, 63, 94, 0.15); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(15px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        /* Loader animation */
+        .typing-loader {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            padding: 0.25rem 0.5rem;
+        }
+
+        .typing-loader span {
+            width: 6px;
+            height: 6px;
+            background-color: var(--text-secondary);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .typing-loader span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-loader span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Ambient Glow BG -->
+    <div class="ambient-glow"></div>
+
+    <!-- Header -->
+    <header>
+        <div class="header-logo">
+            <div class="ksp-badge">KSP</div>
+            <div class="header-title">
+                <h1>KSP CRIME COPILOT</h1>
+                <span>Multi-Agent AI Intelligence System</span>
+            </div>
+        </div>
+        
+        <div class="header-status">
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                <span>Secured Network Connection</span>
+            </div>
+            <div style="color: var(--text-muted)">Node: Local Cluster</div>
+        </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="workspace">
+        <!-- Sidebar: Role Selector -->
+        <div class="sidebar">
+            <div class="sidebar-section-title">Select Intelligence Role</div>
+            
+            <!-- Investigator -->
+            <div class="role-card active investigator" data-role="Investigator" onclick="selectRole('Investigator')">
+                <div class="role-header">
+                    <div class="role-name">Investigator</div>
+                    <div class="clearance-tag">Tactical L1</div>
+                </div>
+                <div class="role-desc">
+                    Cleared to review local case files, offender modus operandi, syndicate graphs, and tactical next steps.
+                </div>
+            </div>
+
+            <!-- Supervisor -->
+            <div class="role-card supervisor" data-role="Supervisor" onclick="selectRole('Supervisor')">
+                <div class="role-header">
+                    <div class="role-name">Supervisor</div>
+                    <div class="clearance-tag">Oversight L2</div>
+                </div>
+                <div class="role-desc">
+                    Authorized to monitor case priority scoring, statistical forecasts, early warnings, and chain-of-thought logical reasoning.
+                </div>
+            </div>
+
+            <!-- Policymaker -->
+            <div class="role-card policymaker" data-role="Policymaker" onclick="selectRole('Policymaker')">
+                <div class="role-header">
+                    <div class="role-name">Policymaker</div>
+                    <div class="clearance-tag">Executive L3</div>
+                </div>
+                <div class="role-desc">
+                    Authorized for macro-level regional crime rates, socio-demographic indicators, and strategic inter-agency coordination.
+                </div>
+            </div>
+        </div>
+
+        <!-- Central Content Area -->
+        <div class="content-area">
+            <!-- Left: Chat Panel -->
+            <div class="chat-pane">
+                <div class="chat-header">
+                    <div class="chat-title">
+                        <h2 id="active-chat-role">Investigator Chat Channel</h2>
+                        <span id="active-chat-clearance">Scope: Level 1 (Tactical) Clearance</span>
+                    </div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted)" id="chat-session-id">Session: ksp_session_5912</div>
+                </div>
+
+                <!-- Messages -->
+                <div class="chat-messages" id="chat-box">
+                    <!-- Default Greeting -->
+                    <div class="message assistant">
+                        <div class="bubble">
+                            Welcome to KSP Crime Copilot. I have loaded all relational FIR tables, Neo4j suspect graphs, and FAISS intelligence briefs into the RAG retriever slots.
+                            <br><br>
+                            Please select your active role in the sidebar and enter your query. You can also use one of the pre-composed suggestions below.
+                        </div>
+                        <div class="message-meta">Copilot Assistant • Just Now</div>
+                    </div>
+                </div>
+
+                <!-- Pipeline Telemetry -->
+                <div class="pipeline-telemetry">
+                    <div>Multi-Agent Pipeline Activity:</div>
+                    <div class="pipeline-steps" id="pipeline-telemetry-steps">
+                        <div class="pipe-step" id="step-ingest"><div class="pipe-indicator"></div>Ingest</div>
+                        <div class="pipe-arrow">→</div>
+                        <div class="pipe-step" id="step-route"><div class="pipe-indicator"></div>Route</div>
+                        <div class="pipe-arrow">→</div>
+                        <div class="pipe-step" id="step-chain"><div class="pipe-indicator"></div>Agents</div>
+                        <div class="pipe-arrow">→</div>
+                        <div class="pipe-step" id="step-reason"><div class="pipe-indicator"></div>Reason</div>
+                        <div class="pipe-arrow">→</div>
+                        <div class="pipe-step" id="step-attribute"><div class="pipe-indicator"></div>Audit</div>
+                        <div class="pipe-arrow">→</div>
+                        <div class="pipe-step" id="step-filter"><div class="pipe-indicator"></div>Filter</div>
+                    </div>
+                </div>
+
+                <!-- Inputs -->
+                <div class="chat-input-area">
+                    <!-- Suggestions Row -->
+                    <div class="suggestions-row" id="suggestions-row">
+                        <!-- Filled dynamically based on role -->
+                    </div>
+
+                    <!-- Input wrapper -->
+                    <div class="input-wrapper">
+                        <input type="text" class="chat-input" id="chat-input" placeholder="Ask a question..." onkeydown="if(event.key === 'Enter') sendQuery()">
+                        <button class="send-btn" onclick="sendQuery()">
+                            <span>Submit</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Visual Dashboard -->
+            <div class="visual-pane">
+                <div class="visual-pane-title">Intelligence Visual Widgets</div>
+
+                <!-- A. INVESTIGATOR VIEW -->
+                <div class="role-view active" id="view-Investigator">
+                    <!-- Suspect profile -->
+                    <div class="widget-card">
+                        <div class="widget-title">
+                            <span>Suspect Profile (Target: Suresh Patil)</span>
+                            <span class="badge" style="background: var(--color-rose-glow); color: var(--color-rose)">Specialized Recidivist</span>
+                        </div>
+                        <div style="font-size: 0.85rem; line-height: 1.4; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.4rem;">
+                            <div><strong>Criminal Alias</strong>: Suresh Anna</div>
+                            <div><strong>Primary Crime</strong>: Burglary / Housebreaking</div>
+                            <div><strong>Consolidated Modus Operandi</strong>: Bypasses security gates disguised as cable/maintenance staff; conducts daytime casing; executes nocturnal window/lock breaches between 01:00 and 04:00 using custom latch bypass tools.</div>
+                            <div style="margin-top: 0.25rem;"><strong>Active Case Files</strong>:</div>
+                            <div style="padding-left: 0.75rem; border-left: 2px solid var(--color-indigo);">
+                                • <strong>FIR-2025-001</strong> (Mysore) — Lockpicking residential theft<br>
+                                • <strong>FIR-2025-009</strong> (Mysore) — Luxury estate window latch bypass<br>
+                                • <strong>FIR-2025-018</strong> (Mangalore) — Port corridor co-accused robbery
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Network Connections -->
+                    <div class="widget-card">
+                        <div class="widget-title">
+                            <span>Co-Accused Syndicate Graph (Suresh Patil)</span>
+                            <span class="badge" style="background: var(--color-indigo-glow); color: var(--color-indigo)">Graph Relation Nodes</span>
+                        </div>
+                        <div style="font-size: 0.82rem; color: var(--text-secondary); display: flex; flex-direction: column; gap: 0.4rem;">
+                            <div><strong>Identified Gang Coordinator</strong>: Suresh Patil (Primary target)</div>
+                            <div><strong>Key Co-Accused Associates</strong>:</div>
+                            <div style="display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.15rem;">
+                                <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); padding: 0.25rem 0.5rem; border-radius: 4px;"><strong>Dinesh Gowda</strong> (Syndicate Associate / Permitting)</div>
+                                <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); padding: 0.25rem 0.5rem; border-radius: 4px;"><strong>Vinay M.</strong> (Fencer / Stolen Goods Receiver)</div>
+                                <div style="background: rgba(255,255,255,0.04); border: 1px solid var(--border-glass); padding: 0.25rem 0.5rem; border-radius: 4px;"><strong>Anil K.</strong> (Direct Accomplice / Entry agent)</div>
+                            </div>
+                            <div style="margin-top: 0.25rem; font-size: 0.78rem; color: var(--text-muted)">
+                                <em>Neo4j Path Audit</em>: Suresh Patil is connected to Vinay M. by 2 shared cases (FIR-2025-001, FIR-2025-009), suggesting a highly active fencing link.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- B. SUPERVISOR VIEW -->
+                <div class="role-view" id="view-Supervisor">
+                    <!-- Priority Scoring -->
+                    <div class="widget-card">
+                        <div class="widget-title">
+                            <span>Pipeline Case Priority</span>
+                            <span class="badge" style="background: var(--color-amber-glow); color: var(--color-amber)">Oversight Escalation</span>
+                        </div>
+                        <div class="gauge-wrapper">
+                            <svg class="gauge-svg" viewBox="0 0 120 120">
+                                <circle class="gauge-bg" cx="60" cy="60" r="55"></circle>
+                                <circle class="gauge-fill" id="supervisor-priority-fill" cx="60" cy="60" r="55"></circle>
+                                <defs>
+                                    <linearGradient id="gauge-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" stop-color="var(--color-amber)"></stop>
+                                        <stop offset="100%" stop-color="var(--color-rose)"></stop>
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="gauge-text">
+                                <span class="gauge-value" id="supervisor-priority-value">7.0</span>
+                                <span class="gauge-label">Priority</span>
+                            </div>
+                        </div>
+                        <div style="font-size: 0.8rem; text-align: center; color: var(--text-secondary)" id="supervisor-priority-justification">
+                            Justification: High-risk recidivist suspect active across multiple districts.
+                        </div>
+                    </div>
+
+                    <!-- Alerts and Forecasts -->
+                    <div class="widget-card">
+                        <div class="widget-title">
+                            <span>Statistical Alerts & forecasts</span>
+                            <span class="badge" style="background: var(--color-rose-glow); color: var(--color-rose)">Thresholds Breached</span>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 0.75rem;" id="supervisor-alerts-list">
+                            <!-- Alert 1 -->
+                            <div class="alert-item">
+                                <div class="alert-header">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                    <span>BURGLARY THRESHOLD BREACH</span>
+                                </div>
+                                <div class="alert-body">
+                                    Projected count of 41 cases exceeds threshold of mean + 2*std (40.63).
+                                </div>
+                            </div>
+                            <!-- Alert 2 -->
+                            <div class="alert-item">
+                                <div class="alert-header">
+                                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                                    <span>CYBER CRIME THRESHOLD BREACH</span>
+                                </div>
+                                <div class="alert-body">
+                                    Projected count of 70 cases exceeds threshold of mean + 2*std (69.14).
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- C. POLICYMAKER VIEW -->
+                <div class="role-view" id="view-Policymaker">
+                    <!-- Regional Hotspots -->
+                    <div class="widget-card">
+                        <div class="widget-title">
+                            <span>Top Incident Hotspots by Density</span>
+                            <span class="badge" style="background: var(--color-rose-glow); color: var(--color-rose)">Spatial Clusters</span>
+                        </div>
+                        <div class="hotspots-list" id="policymaker-hotspots">
+                            <div class="hotspot-row">
+                                <div class="hotspot-info">
+                                    <span class="hotspot-district">Mysore Central</span>
+                                    <span class="hotspot-coords">Lat: 12.2958 | Lng: 76.6394</span>
+                                </div>
+                                <span class="hotspot-count">4 Cases</span>
+                            </div>
+                            <div class="hotspot-row">
+                                <div class="hotspot-info">
+                                    <span class="hotspot-district">Bangalore Central Hub</span>
+                                    <span class="hotspot-coords">Lat: 12.9716 | Lng: 77.5946</span>
+                                </div>
+                                <span class="hotspot-count">3 Cases</span>
+                            </div>
+                            <div class="hotspot-row">
+                                <div class="hotspot-info">
+                                    <span class="hotspot-district">Bangalore East Corridor</span>
+                                    <span class="hotspot-coords">Lat: 12.9784 | Lng: 77.6408</span>
+                                </div>
+                                <span class="hotspot-count">2 Cases</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Temporal patterns -->
+                    <div class="widget-card">
+                        <div class="widget-title">
+                            <span>Temporal Incident Distribution</span>
+                            <span class="badge" style="background: var(--color-violet-glow); color: var(--color-violet)">Time of Day</span>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-bar-wrapper">
+                                <div class="chart-bar-outer">
+                                    <div class="chart-bar-inner" id="bar-Morning" style="height: 40%"></div>
+                                </div>
+                                <span class="chart-label">Morning</span>
+                            </div>
+                            <div class="chart-bar-wrapper">
+                                <div class="chart-bar-outer">
+                                    <div class="chart-bar-inner" id="bar-Afternoon" style="height: 60%"></div>
+                                </div>
+                                <span class="chart-label">After</span>
+                            </div>
+                            <div class="chart-bar-wrapper">
+                                <div class="chart-bar-outer">
+                                    <div class="chart-bar-inner" id="bar-Evening" style="height: 100%"></div>
+                                </div>
+                                <span class="chart-label">Evening</span>
+                            </div>
+                            <div class="chart-bar-wrapper">
+                                <div class="chart-bar-outer">
+                                    <div class="chart-bar-inner" id="bar-Night" style="height: 80%"></div>
+                                </div>
+                                <span class="chart-label">Night</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script -->
+    <script>
+        let currentRole = "Investigator";
+        const sessionId = "session_" + Math.floor(Math.random() * 90000 + 10000);
+        document.getElementById("chat-session-id").innerText = "Session: " + sessionId;
+
+        const suggestions = {
+            "Investigator": [
+                "Audit criminal profile for Suresh Patil",
+                "Show co-accused network for Dinesh Gowda",
+                "What are the direct next actions?"
+            ],
+            "Supervisor": [
+                "Review forecast trend risk alerts",
+                "Show priority score for target suspects",
+                "What is the CoT logical reasoning summary?"
+            ],
+            "Policymaker": [
+                "Compare district per-capita rates",
+                "Shivajinagar demographic drivers",
+                "Suggest inter-agency coordination needs"
+            ]
+        };
+
+        // Initialize Page
+        window.onload = function() {
+            selectRole("Investigator");
+            
+            // Set initial circular gauge dashoffset (Priority 7.0/10 -> stroke-dashoffset = 345 - (345 * 0.7) = 103.5)
+            const fill = document.getElementById("supervisor-priority-fill");
+            if(fill) fill.style.strokeDashoffset = "103.5";
+        };
+
+        // Switch Roles
+        function selectRole(role) {
+            currentRole = role;
+            
+            // 1. Update Sidebar Active Card
+            document.querySelectorAll(".role-card").forEach(card => {
+                card.classList.remove("active");
+                if (card.getAttribute("data-role") === role) {
+                    card.classList.add("active");
+                }
+            });
+
+            // 2. Update Chat Channel Headers
+            document.getElementById("active-chat-role").innerText = role + " Chat Channel";
+            const scopes = {
+                "Investigator": "Scope: Level 1 (Tactical) Clearance",
+                "Supervisor": "Scope: Level 2 (Oversight) Clearance",
+                "Policymaker": "Scope: Level 3 (Executive) Clearance"
+            };
+            document.getElementById("active-chat-clearance").innerText = scopes[role];
+
+            // 3. Toggle Visible Dashboard Visual Widgets
+            document.querySelectorAll(".role-view").forEach(view => {
+                view.classList.remove("active");
+            });
+            document.getElementById("view-" + role).classList.add("active");
+
+            // 4. Reload Suggestions Chips
+            const suggestionsDiv = document.getElementById("suggestions-row");
+            suggestionsDiv.innerHTML = "";
+            suggestions[role].forEach(text => {
+                const chip = document.createElement("div");
+                chip.className = "suggestion-chip";
+                chip.innerText = text;
+                chip.onclick = function() {
+                    document.getElementById("chat-input").value = text;
+                    sendQuery();
+                };
+                suggestionsDiv.appendChild(chip);
+            });
+            
+            logger("Role switched to " + role.toUpperCase());
+        }
+
+        // Helper Logger
+        function logger(text) {
+            console.log("[KSP Copilot] " + text);
+        }
+
+        // Simple Markdown Parser
+        function parseMarkdown(text) {
+            let html = text;
+            
+            // Format headers
+            html = html.replace(/^#\s+(.*?)$/gm, '<h1>$1</h1>');
+            html = html.replace(/^##\s+(.*?)$/gm, '<h2>$1</h2>');
+            html = html.replace(/^###\s+(.*?)$/gm, '<h3>$1</h3>');
+            
+            // Format bold
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+            
+            // Format blockquotes
+            html = html.replace(/^>\s+(.*?)$/gm, '<blockquote>$1</blockquote>');
+            
+            // Format code
+            html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+            
+            // Format lists
+            html = html.replace(/^\s*[\-\*]\s*(.*?)$/gm, '<li>$1</li>');
+            // Wrap loose list items in a list block
+            html = html.replace(/(<li>.*?<\/li>)+/g, '<ul>$&</ul>');
+            
+            // Format line breaks (preserving paragraphs)
+            html = html.split('\n\n').map(p => {
+                if (p.trim().startsWith('<h') || p.trim().startsWith('<ul') || p.trim().startsWith('<block')) {
+                    return p;
+                }
+                return '<p>' + p.replace(/\n/g, '<br>') + '</p>';
+            }).join('');
+
+            return html;
+        }
+
+        // Submit query
+        function sendQuery() {
+            const input = document.getElementById("chat-input");
+            const queryText = input.value.trim();
+            if (!queryText) return;
+
+            input.value = "";
+            
+            // 1. Add User Message
+            addMessage("user", queryText);
+
+            // 2. Clear telemetry active steps
+            document.querySelectorAll(".pipe-step").forEach(step => {
+                step.className = "pipe-step";
+            });
+
+            // 3. Add Assistant Typing Loader
+            const loaderId = addTypingLoader();
+            
+            // Scroll to bottom
+            const chatBox = document.getElementById("chat-box");
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // 4. Trigger Telemetry Progress Simulation
+            runTelemetrySimulation(1000);
+
+            // 5. Query REST API Backend
+            fetch("/api/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    query: queryText,
+                    role: currentRole,
+                    session_id: sessionId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Remove loader
+                removeTypingLoader(loaderId);
+
+                if (data.status === "success") {
+                    // Complete all telemetry steps
+                    document.querySelectorAll(".pipe-step").forEach(step => {
+                        step.classList.add("completed");
+                        step.classList.remove("active");
+                    });
+
+                    // Add assistant markdown report bubble
+                    addMessage("assistant", data.markdown_response);
+
+                    // Update UI Dashboard Widgets based on returned data
+                    updateDashboardWidgets(data);
+
+                } else {
+                    addMessage("assistant", "⚠️ **System Error**: " + (data.error_message || "An unexpected error occurred during pipeline execution."));
+                }
+                
+                chatBox.scrollTop = chatBox.scrollHeight;
+            })
+            .catch(error => {
+                logger("API Error: " + error);
+                removeTypingLoader(loaderId);
+                addMessage("assistant", "⚠️ **Connection Error**: Failed to reach the Copilot HTTP Server. Make sure the server is running on port 8000.");
+                chatBox.scrollTop = chatBox.scrollHeight;
+            });
+        }
+
+        // Add message bubble
+        function addMessage(role, text) {
+            const chatBox = document.getElementById("chat-box");
+            const msgDiv = document.createElement("div");
+            msgDiv.className = "message " + (role === "user" ? "user" : "assistant");
+            
+            const bubbleDiv = document.createElement("div");
+            bubbleDiv.className = "bubble " + (role === "assistant" ? "assistant-report" : "");
+            
+            if (role === "user") {
+                bubbleDiv.innerText = text;
+            } else {
+                bubbleDiv.innerHTML = parseMarkdown(text);
+            }
+            
+            const metaDiv = document.createElement("div");
+            metaDiv.className = "message-meta";
+            metaDiv.innerText = (role === "user" ? "You" : "Copilot Assistant") + " • Just Now";
+
+            msgDiv.appendChild(bubbleDiv);
+            msgDiv.appendChild(metaDiv);
+            chatBox.appendChild(msgDiv);
+        }
+
+        // Loader operations
+        function addTypingLoader() {
+            const id = "loader_" + Date.now();
+            const chatBox = document.getElementById("chat-box");
+            const msgDiv = document.createElement("div");
+            msgDiv.className = "message assistant";
+            msgDiv.id = id;
+            
+            const bubbleDiv = document.createElement("div");
+            bubbleDiv.className = "bubble";
+            bubbleDiv.innerHTML = `
+                <div class="typing-loader">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            `;
+            msgDiv.appendChild(bubbleDiv);
+            chatBox.appendChild(msgDiv);
+            return id;
+        }
+
+        function removeTypingLoader(id) {
+            const loader = document.getElementById(id);
+            if (loader) loader.remove();
+        }
+
+        // Pipeline Telemetry Progress Simulation
+        function runTelemetrySimulation(duration) {
+            const steps = ["step-ingest", "step-route", "step-chain", "step-reason", "step-attribute", "step-filter"];
+            let idx = 0;
+            
+            function nextStep() {
+                if (idx > 0) {
+                    document.getElementById(steps[idx - 1]).classList.remove("active");
+                    document.getElementById(steps[idx - 1]).classList.add("completed");
+                }
+                if (idx < steps.length) {
+                    document.getElementById(steps[idx]).classList.add("active");
+                    idx++;
+                    setTimeout(nextStep, duration / steps.length);
+                }
+            }
+            nextStep();
+        }
+
+        // Update visual widgets dynamically
+        function updateDashboardWidgets(data) {
+            // A. Update Circular Gauge (Supervisor Priority)
+            if (data.markdown_response.includes("Priority")) {
+                const pMatch = data.markdown_response.match(/Priority.*?(\d+)/i);
+                if (pMatch) {
+                    const score = parseInt(pMatch[1]);
+                    const fill = document.getElementById("supervisor-priority-fill");
+                    const valText = document.getElementById("supervisor-priority-value");
+                    
+                    if(valText) valText.innerText = score.toFixed(1);
+                    
+                    if(fill) {
+                        // Priority score 1-10 -> stroke-dashoffset = 345 - (345 * score / 10)
+                        const offset = 345 - (345 * score / 10);
+                        fill.style.strokeDashoffset = offset;
+                    }
+                }
+            }
+
+            // B. Update CSS Bar Charts (Policymaker Temporal)
+            if (data.time_distribution) {
+                const total = Object.values(data.time_distribution).reduce((a, b) => a + b, 0);
+                for (const [bucket, count] of Object.entries(data.time_distribution)) {
+                    const pct = total > 0 ? (count / total * 100) : 0;
+                    const bar = document.getElementById("bar-" + bucket);
+                    if (bar) {
+                        // Delay slightly to trigger transition
+                        setTimeout(() => {
+                            bar.style.height = pct.toFixed(0) + "%";
+                        }, 100);
+                    }
+                }
+            }
+
+            // C. Update Hotspots Grid
+            if (data.hotspots) {
+                const hotspotsContainer = document.getElementById("policymaker-hotspots");
+                if (hotspotsContainer) {
+                    hotspotsContainer.innerHTML = "";
+                    data.hotspots.slice(0, 3).forEach(hotspot => {
+                        const row = document.createElement("div");
+                        row.className = "hotspot-row";
+                        row.innerHTML = `
+                            <div class="hotspot-info">
+                                <span class="hotspot-district">${hotspot.district}</span>
+                                <span class="hotspot-coords">Lat: ${hotspot.lat.toFixed(4)} | Lng: ${hotspot.lng.toFixed(4)}</span>
+                            </div>
+                            <span class="hotspot-count">${hotspot.incident_count} Case${hotspot.incident_count > 1 ? 's' : ''}</span>
+                        `;
+                        hotspotsContainer.appendChild(row);
+                    });
+                }
+            }
+        }
+    </script>
+</body>
+</html>
