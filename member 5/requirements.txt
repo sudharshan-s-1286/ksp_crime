@@ -1,0 +1,23 @@
+# KSP Crime Copilot — Member 5 Dependencies
+# Install with: pip install -r requirements.txt
+
+# Anthropic Claude API
+anthropic>=0.25.0
+
+# PostgreSQL
+psycopg2-binary>=2.9.9
+
+# Neo4j graph database
+neo4j>=5.18.0
+
+# FAISS vector similarity search
+faiss-cpu>=1.8.0
+
+# Numerical computing (required by FAISS)
+numpy>=1.26.0
+
+# Data validation & schemas
+pydantic>=2.6.0
+
+# Environment variable management
+python-dotenv>=1.0.0
