@@ -63,10 +63,97 @@ class GraphRetriever:
         result = {
             "nodes": nodes,
             "edges": edges,
-            "summary": f"Retrieved {len(nodes)} nodes and {len(edges)} edges in the criminal network."
+            "summary": f"Retrieved {len(nodes)} nodes and {len(edges)} edges in the criminal network.",
+            "chunks": self.to_chunks({"nodes": nodes, "edges": edges})
         }
         
         return [{
             "source": "graph_retriever",
             "data": result
         }]
+
+    # ------------------------------------------------------------------
+    # Additional Graph Logic (Merged from SOURCE)
+    # ------------------------------------------------------------------
+
+    def to_chunks(self, data: Dict[str, Any]) -> List[str]:
+        """
+        Convert graph query results into human-readable RAG strings.
+        Adapted from SOURCE's chunking logic to support LLMs.
+        """
+        chunks: List[str] = []
+        if "nodes" in data and "edges" in data:
+            for node in data["nodes"]:
+                chunks.append(f"{node['id']} is a {node['label']} with role: {node.get('role', 'Unknown')}.")
+            for edge in data["edges"]:
+                cases = ", ".join(edge.get("case_ids", []))
+                chunks.append(f"{edge['source']} is connected to {edge['target']} via {edge['type']} (Cases: {cases}).")
+        return chunks
+
+    def find_hubs(self) -> List[Dict[str, Any]]:
+        """
+        Find high-degree nodes (High Value Targets).
+        Adapted from SOURCE network scoring.
+        """
+        hubs = []
+        for node, connections in self.network.items():
+            hubs.append({"node": node, "degree": len(connections)})
+        return sorted(hubs, key=lambda x: x["degree"], reverse=True)
+
+    def shortest_path(self, entity_a: str, entity_b: str) -> List[str]:
+        """
+        Find the shortest path between two entities using BFS.
+        Adapted from SOURCE graph traversal.
+        """
+        if entity_a not in self.network:
+            return []
+            
+        queue = [[entity_a]]
+        visited = {entity_a}
+        
+        while queue:
+            path = queue.pop(0)
+            node = path[-1]
+            
+            if node == entity_b:
+                return path
+                
+            for conn in self.network.get(node, []):
+                neighbor = conn["co_accused"]
+                if neighbor not in visited:
+                    visited.add(neighbor)
+                    queue.append(path + [neighbor])
+                    
+        return []
+
+    def find_clusters(self) -> List[Dict[str, Any]]:
+        """
+        Identify criminal groups as connected components.
+        Adapted from SOURCE cluster detection.
+        """
+        visited = set()
+        clusters = []
+        
+        for node in self.network.keys():
+            if node not in visited:
+                component = []
+                queue = [node]
+                visited.add(node)
+                
+                while queue:
+                    curr = queue.pop(0)
+                    component.append(curr)
+                    for conn in self.network.get(curr, []):
+                        neighbor = conn["co_accused"]
+                        if neighbor not in visited and neighbor in self.network:
+                            visited.add(neighbor)
+                            queue.append(neighbor)
+                            
+                if len(component) > 1:
+                    clusters.append({
+                        "cluster_id": f"cluster_{len(clusters)+1}",
+                        "members": component,
+                        "size": len(component)
+                    })
+                    
+        return sorted(clusters, key=lambda x: x["size"], reverse=True)
