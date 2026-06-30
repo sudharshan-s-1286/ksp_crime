@@ -19,7 +19,9 @@ class FinancialAgent(BaseAgent):
         self.graph_retriever = GraphRetriever()
 
     def _execute(self, message: AgentInput) -> AgentOutput:
-        suspect_name = message.entity_id or "Ramesh Kumar"
+        # Merged from Pratheeka branch: Extract suspect from entities
+        suspects = message.entities.get("person_names", [])
+        suspect_name = suspects[0] if suspects else (message.entity_id or "Ramesh Kumar")
         all_retrieved_chunks = []
 
         # 1. Query SQL for financial FIRs linked to the suspect
@@ -39,13 +41,16 @@ class FinancialAgent(BaseAgent):
         risk_score = 0.0
 
         if financial_firs:
+            # Merged from Pratheeka branch: financial risk scoring
             risk_score += 4.0  # Base risk for active financial cases
             for fir in financial_firs:
                 mo = fir.get("modus_operandi", "").lower()
-                if "hawala" in mo or "transfer" in mo:
+                if "hawala" in mo or "transfer" in mo or "routing" in mo:
+                    # Merged from Pratheeka branch: hawala routing detection
                     financial_flags.append("Hawala money routing detected")
                     risk_score += 2.0
-                if "shell" in mo or "corporation" in mo or "textile" in mo:
+                if "shell" in mo or "corporation" in mo or "textile" in mo or "front" in mo:
+                    # Merged from Pratheeka branch: shell company/front company detection
                     financial_flags.append("Shell company front usage detected")
                     shell_companies.append("Textile Shell Front Corp (Identified in FIR)")
                     risk_score += 2.0

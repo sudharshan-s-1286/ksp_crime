@@ -19,7 +19,8 @@ class SociologyAgent(BaseAgent):
         self.analytics_retriever = AnalyticsRetriever()
 
     def _execute(self, message: AgentInput) -> AgentOutput:
-        district = message.context.get("district", "Shivajinagar")
+        # Merged from Pratheeka branch: district extraction from context/filters
+        district = message.context.get("district") or (message.filters.get("district", "Shivajinagar") if hasattr(message, 'filters') else "Shivajinagar")
         all_retrieved_chunks = []
 
         # 1. Fetch crime count for this district from SQL
@@ -37,12 +38,12 @@ class SociologyAgent(BaseAgent):
         vuln_index = analytics_data.get("demographic_vulnerability_index", {}).get(district, 0.50)
         baseline_recidivism = analytics_data.get("state_wide_baselines", {}).get("recidivism_rate", 0.22)
 
-        # 3. Calculate sociology indicators
+        # 3. Calculate sociology indicators (Merged from Pratheeka branch)
         # Area risk score combines incident count and vulnerability index
-        normalized_incidents = min(1.0, incident_count / 10.0) # Scale compared to high-crime baseline
-        area_risk_score = round((normalized_incidents * 0.4 + vuln_index * 0.6) * 10, 1)
+        normalized_incidents = min(1.0, incident_count / 10.0)
+        area_risk_score = round(((normalized_incidents * 0.4) + (vuln_index * 0.6)) * 10, 1)
 
-        # Recidivism risk scale (districts with higher vulnerability have higher recidivism drivers)
+        # Recidivism risk scale
         recidivism_risk = round(baseline_recidivism * (1 + vuln_index * 0.5), 2)
 
         demographics = {

@@ -9,7 +9,7 @@ class AnalyticsRetriever:
     seasonal indices, and clearance rates from an analytical data warehouse.
     """
     def __init__(self):
-        # Pre-computed trend benchmarks
+        # Pre-computed trend benchmarks (Merged from Pratheeka branch)
         self.precomputed_data = {
             "state_wide_baselines": {
                 "average_monthly_crimes": 3450,

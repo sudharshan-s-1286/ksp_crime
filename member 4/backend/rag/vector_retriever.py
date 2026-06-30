@@ -1,4 +1,6 @@
 import logging
+import math
+from collections import Counter
 from typing import List, Dict, Any
 from backend.db.faiss_client import FaissClient
 
@@ -20,6 +22,55 @@ class VectorRetriever:
                 self._seed_sample_data()
         else:
             self.client = VectorRetriever._client_instance
+
+        # Merged from Pratheeka branch: Setup TF-IDF index structures
+        self.tfidf_index = []
+        self.idf = {}
+        self.vocab = set()
+        self._build_tfidf_index()
+
+    def _tokenize(self, text: str) -> List[str]:
+        # Merged from Pratheeka branch: text tokenization
+        return text.lower().replace(".", "").replace(",", "").split()
+
+    def _build_tfidf_index(self):
+        # Merged from Pratheeka branch: build index and compute IDF
+        docs = self.client.documents if hasattr(self.client, 'documents') else []
+        if not docs:
+            return
+            
+        N = len(docs)
+        doc_freqs = Counter()
+        self.tfidf_index = []
+        
+        for doc in docs:
+            tokens = self._tokenize(doc.get("text", ""))
+            tf = Counter(tokens)
+            self.tfidf_index.append({"id": doc.get("id"), "tf": tf, "doc": doc})
+            for token in set(tokens):
+                doc_freqs[token] += 1
+                self.vocab.add(token)
+                
+        self.idf = {token: math.log(N / (df + 1)) for token, df in doc_freqs.items()}
+
+    def _compute_cosine_similarity(self, query: str, k: int) -> List[Dict[str, Any]]:
+        # Merged from Pratheeka branch: compute cosine similarity
+        query_tokens = self._tokenize(query)
+        query_tf = Counter(query_tokens)
+        
+        scores = []
+        for item in self.tfidf_index:
+            doc_tf = item["tf"]
+            score = 0.0
+            for token in query_tokens:
+                if token in self.idf:
+                    q_weight = query_tf[token] * self.idf[token]
+                    d_weight = doc_tf.get(token, 0) * self.idf[token]
+                    score += q_weight * d_weight
+            scores.append((score, item["doc"]))
+            
+        scores.sort(key=lambda x: x[0], reverse=True)
+        return scores[:k]
 
     def _seed_sample_data(self):
         """
@@ -87,6 +138,7 @@ class VectorRetriever:
             }
         ]
         self.client.add_documents(sample_docs)
+        self._build_tfidf_index()
 
     def retrieve(self, query: str, k: int = 3) -> List[Dict[str, Any]]:
         """
@@ -95,6 +147,12 @@ class VectorRetriever:
         """
         results = self.client.search(query, k=k)
         retrieved_chunks = []
+        
+        # Merged from Pratheeka branch: Use TF-IDF ranking if FAISS results are empty or as an ensemble
+        if not results and self.tfidf_index:
+            tfidf_results = self._compute_cosine_similarity(query, k)
+            results = [{"score": score, **doc} for score, doc in tfidf_results if score > 0]
+            
         for doc in results:
             retrieved_chunks.append({
                 "source": "vector_retriever",
