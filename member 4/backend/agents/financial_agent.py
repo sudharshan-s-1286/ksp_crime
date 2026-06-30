@@ -49,18 +49,18 @@ class FinancialAgent(BaseAgent):
                     # Merged from Pratheeka branch: hawala routing detection
                     financial_flags.append("Hawala money routing detected")
                     risk_score += 2.0
-                if "shell" in mo or "corporation" in mo or "textile" in mo or "front" in mo:
-                    # Merged from Pratheeka branch: shell company/front company detection
+                if "shell" in mo or "corp" in mo or "textile" in mo or "front" in mo:
+                    # Merged from Vishwa/Pratheeka branch: shell company/front company detection
                     financial_flags.append("Shell company front usage detected")
                     shell_companies.append("Textile Shell Front Corp (Identified in FIR)")
                     risk_score += 2.0
         
-        # Examine graph relationships for couriers
+        # Examine graph relationships for couriers (Merged from Vishwa branch)
         edges = network_data.get("edges", [])
         for edge in edges:
-            rel_type = edge.get("type", "")
-            if "Hawala Courier" in rel_type or "Fencer" in rel_type:
-                financial_flags.append(f"Linked to known financial intermediary: {edge.get('target')} ({rel_type})")
+            rel_type = edge.get("type", "").lower()
+            if "hawala" in rel_type or "courier" in rel_type or "fencer" in rel_type:
+                financial_flags.append(f"Linked to known financial intermediary: {edge.get('target')} ({edge.get('type')})")
                 risk_score += 1.5
 
         risk_score = min(10.0, risk_score)  # Cap at 10
