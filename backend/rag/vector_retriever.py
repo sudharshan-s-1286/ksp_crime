@@ -14,6 +14,11 @@ class VectorRetriever:
     _client_instance = None
 
     def __init__(self, index_path: str = "backend/db/faiss_index"):
+        # Merged from Pratheeka branch: Setup TF-IDF index structures
+        self.tfidf_index = []
+        self.idf = {}
+        self.vocab = set()
+
         if VectorRetriever._client_instance is None:
             VectorRetriever._client_instance = FaissClient(index_path=index_path)
             self.client = VectorRetriever._client_instance
@@ -23,10 +28,6 @@ class VectorRetriever:
         else:
             self.client = VectorRetriever._client_instance
 
-        # Merged from Pratheeka branch: Setup TF-IDF index structures
-        self.tfidf_index = []
-        self.idf = {}
-        self.vocab = set()
         self._build_tfidf_index()
 
     def _tokenize(self, text: str) -> List[str]:

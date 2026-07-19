@@ -29,14 +29,16 @@ class Neo4jClient:
     def _initialize(self):
         self.uri = os.getenv("NEO4J_URI", "bolt://localhost:7687")
         self.user = os.getenv("NEO4J_USER", "neo4j")
-        self.password = os.getenv("NEO4J_PASSWORD", "password")
+        self.password = os.getenv("NEO4J_PASSWORD")
         
         self.use_neo4j = HAS_NEO4J and os.getenv("USE_NEO4J", "false").lower() == "true"
 
         if self.use_neo4j:
+            if not self.password:
+                logger.warning("NEO4J_PASSWORD environment variable is not set. Neo4j connection may fail.")
             try:
                 logger.info(f"Connecting to Neo4j database at {self.uri}...")
-                self._driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password))
+                self._driver = GraphDatabase.driver(self.uri, auth=(self.user, self.password or ""))
                 self._driver.verify_connectivity()
                 logger.info("Neo4j connectivity verified successfully.")
             except Exception as e:
