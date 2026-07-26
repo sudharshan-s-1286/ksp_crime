@@ -26,10 +26,6 @@ export const Reports: React.FC = () => {
   const [progress, setProgress] = useState(0);
   const [statusText, setStatusText] = useState('');
   const [selectedTemplate, setSelectedTemplate] = useState('investigation_summary');
-  
-  const [caseFilter, setCaseFilter] = useState('Suresh Patil Network');
-  const [districtFilter, setDistrictFilter] = useState('Bengaluru Central');
-  const [formatFilter, setFormatFilter] = useState('Standard Secure PDF');
 
   const templates: ReportTemplate[] = [
     { id: 'investigation_summary', title: 'Case Investigation Dossier Brief', type: 'PDF', desc: 'Complete timeline compilation, network diagram link list, financial audits, and AI agent statements.', size: '4.8 MB' },
@@ -59,7 +55,6 @@ export const Reports: React.FC = () => {
           setTimeout(() => {
             setIsGenerating(false);
             setProgress(0);
-            window.open(`http://localhost:8000/api/generate-report?case=${encodeURIComponent(caseFilter)}&district=${encodeURIComponent(districtFilter)}&format=${encodeURIComponent(formatFilter)}`, '_blank');
           }, 800);
           return 100;
         }
@@ -129,40 +124,28 @@ export const Reports: React.FC = () => {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs font-sans">
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider font-mono">Case File Filter</span>
-                <select 
-                  value={caseFilter}
-                  onChange={(e) => setCaseFilter(e.target.value)}
-                  className="input-field bg-zinc-900 border-zinc-800 text-white"
-                >
-                  <option value="Suresh Patil Network">Suresh Patil Network</option>
-                  <option value="Belagavi Cyber Fraud">Belagavi Cyber Fraud</option>
-                  <option value="All Cases">All Cases</option>
+                <select className="input-field bg-zinc-900 border-zinc-800 text-white">
+                  <option>Suresh Patil Network</option>
+                  <option>Belagavi Cyber Fraud</option>
+                  <option>All Cases</option>
                 </select>
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider font-mono">Select District</span>
-                <select 
-                  value={districtFilter}
-                  onChange={(e) => setDistrictFilter(e.target.value)}
-                  className="input-field bg-zinc-900 border-zinc-800 text-white"
-                >
-                  <option value="Bengaluru Central">Bengaluru Central</option>
-                  <option value="Hubballi North">Hubballi North</option>
-                  <option value="All Districts">All Districts</option>
+                <select className="input-field bg-zinc-900 border-zinc-800 text-white">
+                  <option>Bengaluru Central</option>
+                  <option>Hubballi North</option>
+                  <option>All Districts</option>
                 </select>
               </div>
 
               <div className="flex flex-col gap-1.5">
                 <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-wider font-mono">File Format Export</span>
-                <select 
-                  value={formatFilter}
-                  onChange={(e) => setFormatFilter(e.target.value)}
-                  className="input-field bg-zinc-900 border-zinc-800 text-white"
-                >
-                  <option value="Standard Secure PDF">Standard Secure PDF</option>
-                  <option value="Excel Worksheet (.xlsx)">Excel Worksheet (.xlsx)</option>
-                  <option value="Structured Raw JSON">Structured Raw JSON</option>
+                <select className="input-field bg-zinc-900 border-zinc-800 text-white">
+                  <option>Standard Secure PDF</option>
+                  <option>Excel Worksheet (.xlsx)</option>
+                  <option>Structured Raw JSON</option>
                 </select>
               </div>
             </div>
@@ -215,11 +198,7 @@ export const Reports: React.FC = () => {
                     <span className="text-[9px] text-zinc-500 font-mono block">{rep.date}</span>
                   </div>
 
-                  <button 
-                    onClick={() => window.open(`http://localhost:8000/api/download-report?name=${encodeURIComponent(rep.name)}`, '_blank')}
-                    className="p-1.5 rounded hover:bg-zinc-850 text-zinc-400 hover:text-white" 
-                    title="Download Report"
-                  >
+                  <button className="p-1.5 rounded hover:bg-zinc-850 text-zinc-400 hover:text-white" title="Download Report">
                     <Download size={14} />
                   </button>
                 </div>

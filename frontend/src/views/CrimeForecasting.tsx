@@ -145,10 +145,7 @@ export const CrimeForecasting: React.FC = () => {
                 </div>
               </div>
 
-              <button 
-                onClick={() => window.open(`http://localhost:8000/api/beat-plan?zone=${selectedZone}`, '_blank')}
-                className="w-full mt-4 btn-secondary text-xs justify-center py-2.5 font-bold"
-              >
+              <button className="w-full mt-4 btn-secondary text-xs justify-center py-2.5 font-bold">
                 <span>GENERATE PREVENTIVE BEAT PLAN</span>
                 <ChevronRight size={14} />
               </button>

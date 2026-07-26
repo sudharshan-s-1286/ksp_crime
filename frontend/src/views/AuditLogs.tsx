@@ -43,28 +43,6 @@ export const AuditLogs: React.FC = () => {
     return matchesSearch && matchesModule;
   });
 
-  const handleExportLogs = () => {
-    const headers = ['Timestamp', 'System User', 'Audited Action Event', 'Module Class', 'Event Status', 'Source IP', 'Clearance'];
-    const rows = filteredLogs.map(log => [
-      `"${log.timestamp}"`,
-      `"${log.user}"`,
-      `"${log.action.replace(/"/g, '""')}"`,
-      `"${log.module}"`,
-      `"${log.status}"`,
-      `"${log.ip_address}"`,
-      `"${log.clearance}"`
-    ]);
-    const csvContent = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'ksp_audit_logs.csv';
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="w-full p-8 flex flex-col bg-zinc-950/20">
       
@@ -76,10 +54,7 @@ export const AuditLogs: React.FC = () => {
           </h1>
           <p className="text-sm text-zinc-400 mt-4 leading-relaxed">Authorized compliance tracking records documenting system changes, AI executions, and credential access histories.</p>
         </div>
-        <button 
-          onClick={handleExportLogs}
-          className="btn-glow text-xs flex items-center gap-2"
-        >
+        <button className="btn-glow text-xs flex items-center gap-2">
           <Download size={14} />
           <span>Export Audit Log</span>
         </button>

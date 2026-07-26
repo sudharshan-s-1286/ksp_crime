@@ -18,7 +18,7 @@ export const Settings: React.FC = () => {
   const [model, setModel] = useState('gemini-3.5-flash');
   const [ragDepth, setRagDepth] = useState(5);
   const [showKey, setShowKey] = useState(false);
-  const backendUrl = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+  const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 
   return (

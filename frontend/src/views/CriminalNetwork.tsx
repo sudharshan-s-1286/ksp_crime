@@ -96,44 +96,6 @@ export const CriminalNetwork: React.FC = () => {
     }
   };
 
-  const handleOpenDossier = () => {
-    if (!selectedNode) return;
-    const content = `# KSP CRIMINAL DOSSIER: ${selectedNode.label.toUpperCase()}
-========================================
-CONFIDENTIAL // LAW ENFORCEMENT SENSITIVE // OFFICIAL USE ONLY
-
-ENTITY TYPE: ${selectedNode.type}
-RISK ASSESSMENT: ${selectedNode.risk} RISK
-INTERNAL ID: ksp_${selectedNode.id}
-
----
-INVESTIGATOR LOGS & INTELLIGENCE BRIEF:
-${selectedNode.details}
-
----
-CRIMINAL NETWORK CONNECTIONS:
-${edges
-  .filter(e => e.from === selectedNode.id || e.to === selectedNode.id)
-  .map(edge => {
-    const otherId = edge.from === selectedNode.id ? edge.to : edge.from;
-    const otherNode = nodes.find(n => n.id === otherId);
-    return `- Connected to ${otherNode?.label} (${otherNode?.type}) via "${edge.label}"`;
-  })
-  .join('\n')}
-
----
-System Timestamp: ${new Date().toISOString()}
-Karnataka State Police Intelligence Platform`;
-
-    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `dossier_${selectedNode.id}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
   return (
     <div className="w-full p-8 flex flex-col bg-zinc-950/20">
       
@@ -365,10 +327,7 @@ Karnataka State Police Intelligence Platform`;
                   </p>
                 </div>
                 
-                <button 
-                  onClick={handleOpenDossier}
-                  className="w-full btn-glow py-2.5 justify-center font-bold"
-                >
+                <button className="w-full btn-glow py-2.5 justify-center font-bold">
                   <span>Open Dossier File</span>
                 </button>
               </div>

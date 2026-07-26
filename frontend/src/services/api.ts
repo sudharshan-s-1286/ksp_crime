@@ -9,16 +9,6 @@ import type {
 } from '../types';
 
 
-// Check if the backend server is reachable
-export const checkBackendHealth = async (): Promise<boolean> => {
-  try {
-    await apiClient.get('/api/agents', { timeout: 5000 });
-    return true;
-  } catch {
-    return false;
-  }
-};
-
 // Real API call for the Copilot chat pipeline
 export const chatCopilot = async (
   query: string, 
@@ -26,26 +16,14 @@ export const chatCopilot = async (
   sessionId: string = 'web_session_default',
   context: any = {}
 ) => {
-  try {
-    const response = await apiClient.post('/api/chat', {
-      query,
-      role,
-      session_id: sessionId,
-      context
-    });
-    return response.data;
-  } catch (err: any) {
-    // Provide meaningful error messages based on error type
-    if (err.code === 'ECONNREFUSED' || err.message?.includes('Network Error')) {
-      throw new Error('Backend server is offline. Please start the backend (run backend.bat) and try again.');
-    }
-    if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
-      throw new Error('Backend pipeline timed out. The multi-agent system is processing. Please try again in a moment.');
-    }
-    throw err;
-  }
+  const response = await apiClient.post('/api/chat', {
+    query,
+    role,
+    session_id: sessionId,
+    context
+  });
+  return response.data;
 };
-
 
 // --- MOCK SERVICE FALLBACKS (as per Rule 6, matching the backend SQLite seed schemas) ---
 
@@ -190,21 +168,12 @@ export const fetchReports = async (): Promise<Report[]> => {
 };
 
 export const fetchAgentStatus = async (): Promise<AgentResult[]> => {
-  try {
-    const res = await apiClient.get('/api/agents');
-    const data = res.data || {};
-    return Object.entries(data).map(([key, ag]: [string, any]) => ({
-      agent_name: ag.name || key,
-      status: ag.status || 'Active',
-      confidence: Math.round((ag.confidence || 0.95) * 100),
-      execution_time_ms: ag.execution_time_ms || 120
-    }));
-  } catch (err) {
-    return [
-      { agent_name: "Master Agent", status: "Idle", confidence: 98, execution_time_ms: 25 },
-      { agent_name: "Router", status: "Idle", confidence: 96, execution_time_ms: 15 },
-      { agent_name: "Crime Query Agent", status: "Idle", confidence: 94, execution_time_ms: 45 },
-      { agent_name: "Reasoning Agent", status: "Idle", confidence: 97, execution_time_ms: 60 }
-    ];
-  }
+  await new Promise(resolve => setTimeout(resolve, 500));
+  return [
+    { agent_name: "Profiling Agent", status: "Active", confidence: 94, execution_time_ms: 140 },
+    { agent_name: "Analytics Agent", status: "Active", confidence: 96, execution_time_ms: 220 },
+    { agent_name: "Forecast Agent", status: "Active", confidence: 91, execution_time_ms: 310 },
+    { agent_name: "Network Agent", status: "Active", confidence: 95, execution_time_ms: 180 },
+    { agent_name: "Financial Agent", status: "Active", confidence: 92, execution_time_ms: 290 }
+  ];
 };

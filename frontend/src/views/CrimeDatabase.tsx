@@ -75,10 +75,7 @@ export const CrimeDatabase: React.FC = () => {
               Syncing...
             </span>
           )}
-          <button 
-            onClick={() => window.open(`http://localhost:8000/api/export-records?type=${filterType}&district=${filterDistrict}&search=${debouncedSearch}`, '_blank')}
-            className="btn-glow text-xs flex items-center gap-2"
-          >
+          <button className="btn-glow text-xs flex items-center gap-2">
             <Download size={14} />
             <span>Export Records</span>
           </button>

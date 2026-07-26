@@ -1,19 +1,23 @@
 import axios, { AxiosError } from 'axios';
 import type { InternalAxiosRequestConfig } from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 export const apiClient = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
-  timeout: 120000, // 120 seconds — multi-agent pipeline can take up to 90s on cold start
+  timeout: 30000, // 30 seconds (some multi-agent pipelines can take time)
 });
 
-// Request interceptor to attach JWT token (Disabled to prevent CORS preflight failures as Python backend do_OPTIONS only allows Content-Type)
+// Request interceptor to attach JWT token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    const token = localStorage.getItem('ksp_token');
+    if (token && config.headers) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => {
@@ -28,8 +32,7 @@ apiClient.interceptors.response.use(
     const config = error.config as any;
     
     // Check if we should retry this request
-    if (!config) return Promise.reject(error);
-    if (config.retryCount === undefined) {
+    if (!config || !config.retryCount === undefined) {
       config.retryCount = 0;
     }
     

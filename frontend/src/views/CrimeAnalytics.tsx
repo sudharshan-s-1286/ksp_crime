@@ -102,10 +102,7 @@ export const CrimeAnalytics: React.FC = () => {
             <option value="Quarter">Last 90 Days</option>
             <option value="Year">Full Calendar Year</option>
           </select>
-          <button 
-            onClick={() => window.open(`http://localhost:8000/api/export-analytics?period=${analyticsPeriod}`, '_blank')}
-            className="btn-glow text-xs flex items-center gap-2"
-          >
+          <button className="btn-glow text-xs flex items-center gap-2">
             <Download size={14} />
             <span>Generate PDF Report</span>
           </button>
