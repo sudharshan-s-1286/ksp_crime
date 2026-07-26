@@ -5,14 +5,32 @@ import logging
 import socketserver
 import time
 import queue
+import signal
 from typing import Dict, Any
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
-# Ensure repository root is in sys.path for `from backend.xxx import xxx` imports
+# ---------------------------------------------------------------------------
+# Import compatibility
+#
+# This app must run in two layouts:
+# 1) Standard repo layout: "backend/" is a subdirectory of repo root.
+# 2) AppSail layout:    root directory is "backend", so app.py and all
+#                        packages sit directly at the filesystem root.
+# ---------------------------------------------------------------------------
 _backend_dir = os.path.dirname(os.path.abspath(__file__))
 _repo_root = os.path.abspath(os.path.join(_backend_dir, ".."))
-if _repo_root not in sys.path:
-    sys.path.insert(0, _repo_root)
+
+if os.path.isdir(os.path.join(_repo_root, "backend")):
+    if _repo_root not in sys.path:
+        sys.path.insert(0, _repo_root)
+else:
+    if _backend_dir not in sys.path:
+        sys.path.insert(0, _backend_dir)
+    if "backend" not in sys.modules:
+        backend_pkg = type(sys)("backend")
+        backend_pkg.__path__ = [_backend_dir]
+        backend_pkg.__package__ = "backend"
+        sys.modules["backend"] = backend_pkg
 
 from backend.orchestration.pipeline import CopilotPipeline
 
@@ -308,6 +326,11 @@ KSP Forecast & Decision Support Platform
                 telemetry_manager.unregister_subscriber(sub_queue)
             return
 
+        # Health endpoint
+        if path == "/health":
+            self._send_json({"status": "ok"})
+            return
+
         # 1. Serve index.html at root
         if self.path == "/" or self.path == "/index.html":
             self._serve_file("backend/static/index.html", "text/html")
@@ -510,13 +533,23 @@ class ThreadingHTTPServer(socketserver.ThreadingMixIn, HTTPServer):
     daemon_threads = True
 
 def run_server(port: int = 8000):
-    server_address = ('', port)
+    server_address = ("0.0.0.0", port)
     httpd = ThreadingHTTPServer(server_address, CopilotHTTPHandler)
-    logger.info(f"KSP Crime Copilot Dashboard Server running at: http://localhost:{port}")
+    logger.info(f"Python version: {sys.version}")
+    logger.info(f"Current working directory: {os.getcwd()}")
+    logger.info(f"KSP Crime Copilot running on port {port}")
+    logger.info("Server started successfully")
+
+    def _on_sigterm(signum, frame):
+        logger.info("Received SIGTERM, shutting down.")
+        raise SystemExit(0)
+
+    signal.signal(signal.SIGTERM, _on_sigterm)
     try:
         httpd.serve_forever()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, SystemExit):
         logger.info("Server shutting down.")
+    finally:
         httpd.server_close()
 
 if __name__ == "__main__":
