@@ -20,7 +20,7 @@ class SociologyAgent(BaseAgent):
 
     def _execute(self, message: AgentInput) -> AgentOutput:
         # Merged from Pratheeka branch: district extraction from context/filters
-        district = message.context.get("district") or (message.filters.get("district", "Shivajinagar") if hasattr(message, 'filters') else "Shivajinagar")
+        district = message.context.get("district") or "Shivajinagar"
         all_retrieved_chunks = []
 
         # 1. Fetch crime count for this district from SQL

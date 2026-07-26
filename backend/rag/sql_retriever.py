@@ -59,6 +59,22 @@ class SQLRetriever:
             )
         """)
 
+        # 4. Create Suspect Dossiers table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS suspect_dossiers (
+                name TEXT PRIMARY KEY,
+                alias TEXT,
+                status TEXT,
+                risk INTEGER,
+                age INTEGER,
+                clearance TEXT,
+                arrests INTEGER,
+                convictions INTEGER,
+                modus_operandi TEXT,
+                psychological_brief TEXT
+            )
+        """)
+
         # Seed Populations
         populations_data = [
             ("Bangalore East", 1200000),
@@ -122,6 +138,20 @@ class SQLRetriever:
 
         cursor.executemany("INSERT INTO monthly_stats VALUES (?, ?, ?)", monthly_data)
         
+        # Seed suspect dossiers
+        dossiers_data = [
+            ("Suresh Patil", "Patil Hegde", "Wanted", 89, 38, "Confidential", 4, 1, 
+             "Primarily operates via offshore money laundering accounts and digital extortion rings. Uses local field runner nodes (e.g. Laxman Naik) to execute physical cash extortions. Highly coordinated and rarely participates directly in field offenses.",
+             "Profile exhibits calculated risk-taking behavior. Highly organized financial strategist. Tracks police frequencies and shifts. Unlikely to remain at registered coordinates for more than 48 hours."),
+            ("Laxman Naik", "Naik Baba", "Under Surveillance", 94, 32, "Confidential", 8, 3,
+             "Field Operator. CCTV captures connect suspect vehicles directly. Executed jewellery store robbery. Matches lock-cutting modus operandi.",
+             "High impulsivity. Direct tactical executor. Prone to physical confrontation. Connected to multiple local transport hubs."),
+            ("Anand Hegde", "Broker Hegde", "Detained", 65, 45, "Restricted", 2, 0,
+             "Customs Liaison. Facilitates transit and smuggling pipelines. Financial accounts show direct transfers.",
+             "Methodical white-collar enabler. Coordinates closely with harbor transit nodes. Cooperative when detained.")
+        ]
+        cursor.executemany("INSERT INTO suspect_dossiers VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", dossiers_data)
+        
         self.conn.commit()
 
     def retrieve(self, sql_query: str, params: tuple = ()) -> List[Dict[str, Any]]:
@@ -131,9 +161,16 @@ class SQLRetriever:
         """
         cursor = self.conn.cursor()
         try:
+            import time
+            from backend.telemetry.telemetry_manager import telemetry_manager
+
+            t0 = time.time()
             cursor.execute(sql_query, params)
             columns = [col[0] for col in cursor.description]
             results = [dict(zip(columns, row)) for row in cursor.fetchall()]
+            elapsed_ms = (time.time() - t0) * 1000.0
+
+            telemetry_manager.record_db_query("sql", query_time_ms=elapsed_ms, rows=len(results))
             
             # Formulate source chunks representation
             chunks = [{

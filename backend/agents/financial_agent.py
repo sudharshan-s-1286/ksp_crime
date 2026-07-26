@@ -4,19 +4,22 @@ from backend.agents.base_agent import BaseAgent
 from backend.contracts.agent_schemas import AgentInput, AgentOutput
 from backend.rag.sql_retriever import SQLRetriever
 from backend.rag.graph_retriever import GraphRetriever
+from backend.rag.vector_retriever import VectorRetriever
 from backend.config.settings import call_llm
 
 logger = logging.getLogger("FinancialAgent")
 
 class FinancialAgent(BaseAgent):
     """
-    Agent that detects illicit financial operations, including money laundering, 
+    Agent that detects illicit financial operations, including money laundering,
     hawala transactions, and shell company fronts, using SQL and Graph data.
+    Uses hybrid retrieval: SQL for exact matches, Vector for intelligence briefs.
     """
     def __init__(self, name: str = None):
         super().__init__(name)
         self.sql_retriever = SQLRetriever()
         self.graph_retriever = GraphRetriever()
+        self.vector_retriever = VectorRetriever()
 
     def _execute(self, message: AgentInput) -> AgentOutput:
         # Merged from Pratheeka branch: Extract suspect from entities
@@ -34,6 +37,10 @@ class FinancialAgent(BaseAgent):
         graph_chunks = self.graph_retriever.retrieve([suspect_name])
         all_retrieved_chunks.extend(graph_chunks)
         network_data = graph_chunks[0]["data"] if graph_chunks else {}
+
+        # 2b. Query Vector store for financial intelligence briefs
+        vector_chunks = self.vector_retriever.retrieve(suspect_name, k=2)
+        all_retrieved_chunks.extend(vector_chunks)
 
         # 3. Analyze patterns and extract flags
         financial_flags = []

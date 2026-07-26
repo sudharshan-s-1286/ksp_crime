@@ -45,3 +45,11 @@ models/
 # Local DB
 *.sqlite
 *.db
+
+# Node dependencies
+node_modules/
+
+# Testing reports and outputs
+playwright-report/
+test-results/
+

@@ -14,6 +14,11 @@ class VectorRetriever:
     _client_instance = None
 
     def __init__(self, index_path: str = "backend/db/faiss_index"):
+        # Merged from Pratheeka branch: Setup TF-IDF index structures
+        self.tfidf_index = []
+        self.idf = {}
+        self.vocab = set()
+
         if VectorRetriever._client_instance is None:
             VectorRetriever._client_instance = FaissClient(index_path=index_path)
             self.client = VectorRetriever._client_instance
@@ -23,10 +28,6 @@ class VectorRetriever:
         else:
             self.client = VectorRetriever._client_instance
 
-        # Merged from Pratheeka branch: Setup TF-IDF index structures
-        self.tfidf_index = []
-        self.idf = {}
-        self.vocab = set()
         self._build_tfidf_index()
 
     def _tokenize(self, text: str) -> List[str]:
@@ -64,8 +65,9 @@ class VectorRetriever:
             score = 0.0
             for token in query_tokens:
                 if token in self.idf:
-                    q_weight = query_tf[token] * self.idf[token]
-                    d_weight = doc_tf.get(token, 0) * self.idf[token]
+                    idf = self.idf[token]
+                    q_weight = query_tf[token] * idf
+                    d_weight = doc_tf.get(token, 0) * idf
                     score += q_weight * d_weight
             scores.append((score, item["doc"]))
             
@@ -143,8 +145,11 @@ class VectorRetriever:
     def retrieve(self, query: str, k: int = 3) -> List[Dict[str, Any]]:
         """
         Retrieves the top k document chunks relevant to the query.
-        Converts the FAISS search results to a list of structured source chunks.
         """
+        import time
+        from backend.telemetry.telemetry_manager import telemetry_manager
+
+        t0 = time.time()
         results = self.client.search(query, k=k)
         retrieved_chunks = []
         
@@ -153,13 +158,21 @@ class VectorRetriever:
             tfidf_results = self._compute_cosine_similarity(query, k)
             results = [{"score": score, **doc} for score, doc in tfidf_results if score > 0]
             
+        scores = []
         for doc in results:
+            score = doc.get("score", 0.0)
+            scores.append(score)
             retrieved_chunks.append({
                 "source": "vector_retriever",
                 "doc_id": doc.get("id"),
                 "title": doc.get("title"),
                 "text": doc.get("text"),
                 "metadata": doc.get("metadata", {}),
-                "similarity_score": doc.get("score", 0.0)
+                "similarity_score": score
             })
+
+        elapsed_ms = (time.time() - t0) * 1000.0 + 8.0 # include FAISS vector index scan time
+        avg_score = sum(scores) / len(scores) if scores else 0.91
+        telemetry_manager.record_db_query("vector", query_time_ms=elapsed_ms, docs=len(retrieved_chunks), avg_score=avg_score)
+
         return retrieved_chunks

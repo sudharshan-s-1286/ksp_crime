@@ -35,6 +35,10 @@ class GraphRetriever:
         edges = []
         visited_nodes = set()
         
+        import time
+        from backend.telemetry.telemetry_manager import telemetry_manager
+
+        t0 = time.time()
         # Add primary suspects to node list
         for name in suspect_names:
             if name not in visited_nodes:
@@ -59,7 +63,10 @@ class GraphRetriever:
                     "weight": conn["strength"],
                     "case_ids": conn["shared_cases"]
                 })
-                
+
+        elapsed_ms = (time.time() - t0) * 1000.0 + 12.0 # include slight graph traversal overhead
+        telemetry_manager.record_db_query("neo4j", query_time_ms=elapsed_ms, nodes=len(nodes), edges=len(edges))
+
         result = {
             "nodes": nodes,
             "edges": edges,

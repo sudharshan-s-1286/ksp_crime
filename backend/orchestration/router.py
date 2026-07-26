@@ -1,4 +1,3 @@
-import re
 import logging
 from typing import List, Set, Dict, Any
 from backend.contracts.agent_schemas import AgentInput
@@ -32,13 +31,20 @@ class Router:
         # 1. Extract Suspect Names from query text if not already provided
         suspects = message.entities.get("person_names", [])
         if not suspects:
-            # Match capitalized names (two words)
-            name_matches = re.findall(r"\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)?)\b", message.query)
-            # Filter out common non-name words
-            ignore_words = {"Ksp", "Crime", "Copilot", "Karnataka", "Police", "Morning", "Afternoon", "Evening", "Night", "Burglary", "Theft", "Assault", "Cyber", "Financial", "Forensic", "Investigator", "Supervisor", "Policymaker", "Shivajinagar", "Mysore", "Mangalore", "Bangalore"}
-            for name in name_matches:
-                if name not in ignore_words and len(name.split()) >= 2:
-                    suspects.append(name)
+            ignore_words = {"KSP", "Crime", "Copilot", "Karnataka", "Police", "Morning", "Afternoon", "Evening", "Night", "Burglary", "Theft", "Assault", "Cyber", "Financial", "Forensic", "Investigator", "Supervisor", "Policymaker", "Shivajinagar", "Mysore", "Mangalore", "Bangalore", "Profile", "Analyze", "Provide", "Review", "Check", "Show", "Generate", "Run", "Get", "Find", "Inspect", "Test", "Demo", "Complete", "Full", "Summary", "Report", "Provide", "Intelligence", "Brief", "Run", "Complete", "Audit", "Next", "What", "How", "When", "Where", "Why", "Can", "Will", "Is", "Are", "Was", "Were", "Do", "Does", "Did", "Has", "Have", "Had"}
+            ignore_words_upper = {w.upper() for w in ignore_words}
+            tokens = message.query.split()
+            for i in range(len(tokens) - 1):
+                w1 = tokens[i].strip()
+                w2 = tokens[i + 1].strip()
+                if (len(w1) > 1 and len(w2) > 1 and
+                    w1[0].isupper() and w1[1:].islower() and
+                    w2[0].isupper() and w2[1:].islower() and
+                    w1.upper() not in ignore_words_upper and
+                    w2.upper() not in ignore_words_upper):
+                    full_name = f"{w1} {w2}"
+                    if full_name not in suspects:
+                        suspects.append(full_name)
             if suspects:
                 message.entities["person_names"] = suspects
                 logger.info(f"Router extracted suspect names from query: {suspects}")

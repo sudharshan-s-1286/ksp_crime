@@ -7,6 +7,7 @@ load_dotenv()
 
 # Configuration settings
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 MODEL_NAME = os.getenv("LLM_MODEL", "claude-3-5-sonnet-20241022")
 
 # Global LLM client placeholder
@@ -24,11 +25,36 @@ def get_anthropic_client():
 
 def call_llm(prompt: str, max_tokens: int = 1000) -> str:
     """
-    Calls the Claude LLM with the given prompt.
-    If no API key is set, or the library is not installed, it gracefully falls back
-    to generating realistic, professional simulated responses based on the prompt's context
-    to ensure full schema-compliance and testability.
+    Calls Gemini or Claude LLM depending on configuration keys.
+    Falls back to mock simulation engine on failure.
     """
+    try:
+        debug_path = "C:/Users/vishw/.gemini/antigravity-ide/gemini_debug.txt"
+        with open(debug_path, "a") as f:
+            f.write(f"call_llm entered. GEMINI_API_KEY exists: {bool(GEMINI_API_KEY)}\n")
+    except Exception:
+        pass
+    if GEMINI_API_KEY:
+        try:
+            import urllib.request
+            import json
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key={GEMINI_API_KEY}"
+            payload = {
+                "contents": [{"parts": [{"text": prompt}]}]
+            }
+            data = json.dumps(payload).encode('utf-8')
+            req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+            with urllib.request.urlopen(req, timeout=30) as response:
+                res = json.loads(response.read().decode('utf-8'))
+                return res['candidates'][0]['content']['parts'][0]['text']
+        except Exception as e:
+            import traceback
+            import sys
+            print(f"CRITICAL GEMINI ERROR: {str(e)}", file=sys.stderr, flush=True)
+            traceback.print_exc(file=sys.stderr)
+            sys.stderr.flush()
+            raise e
+
     client = get_anthropic_client()
     if client:
         try:

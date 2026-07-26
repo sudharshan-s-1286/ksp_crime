@@ -39,10 +39,24 @@ class AnalyticsRetriever:
 
     def retrieve(self, query: str = "") -> List[Dict[str, Any]]:
         """
-        Retrieves pre-computed analytical indicators.
+        Retrieves pre-computed analytical indicators, filtered by query context.
         """
         logger.info(f"Retrieving pre-computed analytics for query: '{query}'")
+        data = self.precomputed_data.copy()
+        query_lower = query.lower()
+
+        # Filter district vulnerability index by query context
+        if query_lower:
+            matched_districts = []
+            for district in data.get("demographic_vulnerability_index", {}):
+                if district.lower() in query_lower or query_lower in district.lower():
+                    matched_districts.append(district)
+            if matched_districts:
+                data["demographic_vulnerability_index"] = {
+                    d: data["demographic_vulnerability_index"][d] for d in matched_districts
+                }
+
         return [{
             "source": "analytics_retriever",
-            "data": self.precomputed_data
+            "data": data
         }]

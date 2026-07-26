@@ -4,9 +4,6 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Union
 from backend.contracts.agent_schemas import AgentInput, AgentOutput
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
-
 class BaseAgent(ABC):
     """
     Abstract base class for all KSP Crime Copilot agents.

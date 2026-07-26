@@ -4,6 +4,7 @@ from backend.agents.base_agent import BaseAgent
 from backend.contracts.agent_schemas import AgentInput, AgentOutput
 from backend.rag.sql_retriever import SQLRetriever
 from backend.rag.graph_retriever import GraphRetriever
+from backend.rag.vector_retriever import VectorRetriever
 from backend.config.settings import call_llm
 
 logger = logging.getLogger("ProfilingAgent")
@@ -18,6 +19,7 @@ class ProfilingAgent(BaseAgent):
         super().__init__(name)
         self.sql_retriever = SQLRetriever()
         self.graph_retriever = GraphRetriever()
+        self.vector_retriever = VectorRetriever()
 
     def _execute(self, message: AgentInput) -> AgentOutput:
         person_names = message.entities.get("person_names", [])
@@ -26,7 +28,14 @@ class ProfilingAgent(BaseAgent):
             person_names = [message.entity_id]
             
         if not person_names:
-            raise ValueError("ProfilingAgent requires at least one suspect name in message.entities['person_names'] or message.entity_id.")
+            return AgentOutput(
+                data={
+                    "profile_fields": {},
+                    "narrative_profile": "",
+                    "risk_indicators": []
+                },
+                chunks=[]
+            )
 
         all_retrieved_chunks = []
         all_firs = []
@@ -42,7 +51,12 @@ class ProfilingAgent(BaseAgent):
         # 2. Fetch co-accused network from Graph
         graph_chunks = self.graph_retriever.retrieve(person_names)
         all_retrieved_chunks.extend(graph_chunks)
-        
+
+        # 2b. Fetch supplementary intelligence from Vector store
+        for person in person_names:
+            vector_chunks = self.vector_retriever.retrieve(person, k=2)
+            all_retrieved_chunks.extend(vector_chunks)
+
         network_data = {}
         if graph_chunks:
             network_data = graph_chunks[0]["data"]

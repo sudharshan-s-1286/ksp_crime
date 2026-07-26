@@ -4,6 +4,7 @@ from backend.agents.base_agent import BaseAgent
 from backend.contracts.agent_schemas import AgentInput, AgentOutput
 from backend.rag.sql_retriever import SQLRetriever
 from backend.rag.analytics_retriever import AnalyticsRetriever
+from backend.rag.vector_retriever import VectorRetriever
 from backend.config.settings import call_llm
 
 logger = logging.getLogger("AnalyticsAgent")
@@ -17,6 +18,7 @@ class AnalyticsAgent(BaseAgent):
         super().__init__(name)
         self.sql_retriever = SQLRetriever()
         self.analytics_retriever = AnalyticsRetriever()
+        self.vector_retriever = VectorRetriever()
 
     def _execute(self, message: AgentInput) -> AgentOutput:
         all_retrieved_chunks = []
@@ -92,6 +94,10 @@ class AnalyticsAgent(BaseAgent):
         rate_chunks = self.sql_retriever.retrieve(rate_query)
         all_retrieved_chunks.extend(rate_chunks)
         district_rates = [chunk["data"] for chunk in rate_chunks]
+
+        # 6b. Semantic vector search for contextual intelligence
+        vector_chunks = self.vector_retriever.retrieve(message.query, k=3)
+        all_retrieved_chunks.extend(vector_chunks)
 
         # 6. Format into a structured analytics report dict
         metrics = {
