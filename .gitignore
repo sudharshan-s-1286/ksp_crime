@@ -53,3 +53,12 @@ node_modules/
 playwright-report/
 test-results/
 
+# Frontend build output
+frontend/dist/
+
+# Kilo config
+.kilo/
+
+# Backend data
+backend/backend/
+
