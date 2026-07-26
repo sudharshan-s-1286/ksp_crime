@@ -29,7 +29,7 @@ def call_llm(prompt: str, max_tokens: int = 1000) -> str:
     Falls back to mock simulation engine on failure.
     """
     try:
-        debug_path = "C:/Users/vishw/.gemini/antigravity-ide/gemini_debug.txt"
+        debug_path = os.path.join(os.getcwd(), "gemini_debug.txt")
         with open(debug_path, "a") as f:
             f.write(f"call_llm entered. GEMINI_API_KEY exists: {bool(GEMINI_API_KEY)}\n")
     except Exception:

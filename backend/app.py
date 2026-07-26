@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import logging
 import socketserver
@@ -6,6 +7,13 @@ import time
 import queue
 from typing import Dict, Any
 from http.server import HTTPServer, BaseHTTPRequestHandler
+
+# Ensure repository root is in sys.path for `from backend.xxx import xxx` imports
+_backend_dir = os.path.dirname(os.path.abspath(__file__))
+_repo_root = os.path.abspath(os.path.join(_backend_dir, ".."))
+if _repo_root not in sys.path:
+    sys.path.insert(0, _repo_root)
+
 from backend.orchestration.pipeline import CopilotPipeline
 
 # Configure logging
@@ -512,8 +520,7 @@ def run_server(port: int = 8000):
         httpd.server_close()
 
 if __name__ == "__main__":
-    import sys
-    port = 8000
+    port = int(os.getenv("PORT", "8000"))
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])
