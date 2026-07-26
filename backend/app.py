@@ -520,10 +520,11 @@ def run_server(port: int = 8000):
         httpd.server_close()
 
 if __name__ == "__main__":
-    port = int(os.getenv("PORT", "8000"))
+    port = int(os.getenv("X_ZOHO_CATALYST_LISTEN_PORT", os.getenv("PORT", "8000")))
     if len(sys.argv) > 1:
         try:
             port = int(sys.argv[1])
         except ValueError:
             pass
+    logger.info(f"KSP Crime Copilot running on port {port}")
     run_server(port)
